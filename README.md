@@ -29,9 +29,8 @@ title: domain driven development
 
 # 2 章 値オブジェクト
 
-- システム固有の値はプリミティブ型(number 型, string 型など)で表現することはできない
+- システム固有の値はプリミティブ型(`int`, `string` など)で表現することはできない
 - 値をオブジェクトとして管理すること(**値オブジェクト**)でシステム固有の値として保持する
-- 以降のサンプルコードは Go で記載する
 
 ```go
 // FullNameという値をオブジェクトとして扱う
@@ -78,8 +77,8 @@ fullName = NewFullName("suzuki", "jiro")
 
 ### 3. 等価性によって比較される
 
-- 値オブジェクトは値なので、以下のように値を取り出して比較するコードは不自然
-- 下のようにすると例えば、ミドルネームというインスタンスプロパティが追加されても修正は `Equals` メソッドだけで済む
+- 値オブジェクトは値なので、以下のようにフィールドを取り出して比較するコードは不自然
+- 下のようにすると例えば、ミドルネームというフィールドが追加されても修正は `Equal` メソッドだけで済む
 
 ```go
 // bad
@@ -92,13 +91,13 @@ if userA.lastName == userB.lastName && userA.firstName == userB.lastName {
 
 ```go
 // good
-func (f FullName) Equals(other FullName) bool {
-	// 比較する
+func (f FullName) Equal(other FullName) bool {
+	return f.lastName == other.lastName && f.firstName == other.firstName
 }
 
 userA := NewFullName("yamada", "taro")
 userB := NewFullName("yamada", "taro")
-userA.Equals(userB)
+userA.Equal(userB)
 ```
 
 ## 業務上のルールを値オブジェクトに含める
@@ -134,12 +133,11 @@ func NewFullName(lastName, firstName string) (FullName, error) {
 
 ```go
 type Money struct {
-	value int
+	amount int64
 }
 
 func (m Money) Add(other Money) Money {
-	sum := other.value + m.value
-	return Money{value: sum} // 値は不変のため新たにインスタンスを定義して返す
+	return Money{amount: m.amount + other.amount} // 値は不変のため新たに値を返す
 }
 ```
 
@@ -152,7 +150,7 @@ func (m Money) Add(other Money) Money {
 
 ### 1. 表現が増す
 
-- string 型や number 型では文字列、数値であれば何でも許容するため、文字列、数値という意味しかもたない
+- string 型や int 型では文字列、数値であれば何でも許容するため、文字列、数値という意味しかもたない
 - 業務上で扱う値は、必ず何かしらのルールや、意味を持つ
 - 値オブジェクトにルールを記載するので、仕様の代わりになり、何を表しているのかが明確になる
 
@@ -251,8 +249,8 @@ type User struct {
 }
 
 func (u *User) ChangeName(name Name) error {
-	if name.Equals(NewName("", "")) {
-		return errors.New("名前が空文字です")
+	if name == (Name{}) {
+		return errors.New("名前が空です")
 	}
 	u.name = name
 	return nil
@@ -267,16 +265,16 @@ func (u *User) ChangeName(name Name) error {
 
 ```go
 type User struct {
-	id   Id // ユーザを識別する固有のid
+	id   UserID // ユーザを識別する固有のID
 	name Name
 }
 
-func NewUser(id Id, name Name) (*User, error) {
-	if id == (Id{}) {
-		return nil, errors.New("null of id")
+func NewUser(id UserID, name Name) (*User, error) {
+	if id == (UserID{}) {
+		return nil, errors.New("idが必要です")
 	}
 	if name == (Name{}) {
-		return nil, errors.New("null of name")
+		return nil, errors.New("nameが必要です")
 	}
 	return &User{id: id, name: name}, nil
 }
@@ -288,8 +286,8 @@ func NewUser(id Id, name Name) (*User, error) {
 - 同一性を比較する処理が必要
 
 ```go
-func (u User) Equals(other User) bool {
-	// idを識別するメソッド
+func (u User) Equal(other User) bool {
+	// 同一性は id で判定する
 	return u.id == other.id
 }
 ```
@@ -374,7 +372,7 @@ func (u User) Name() string {
 ```go
 user := NewUser(userID, userName)
 // user自身に重複を確認するのはおかしい
-duplicateCheckUser := user.Exist(user)
+duplicateCheckUser := user.Exists(user)
 ```
 
 ## 不自然さを解決するオブジェクト
@@ -405,8 +403,7 @@ duplicateCheckUser := userService.Exists(user)
 ## ドメインサービスの命名
 
 - プログラマーにドメインサービスと分かるようにする必要がある
-  - ドメイン概念+service
-  - ドメイン概念+domainService
+  - ドメイン概念+Service
 
 ## まとめ
 
@@ -432,54 +429,60 @@ duplicateCheckUser := userService.Exists(user)
 - ドメインにとって大事なのは、**あるデータを保存する(永続化)、また、あるデータを取得する(再構築)すること**
 
 ```go
-type Program struct {
-	// ユーザリポジトリインターフェースに依存
-	userRepository IUserRepository
+type UserApplicationService struct {
+	// ユーザリポジトリのインターフェースに依存する
+	userRepository UserRepository
 }
 
-func NewProgram(userRepository IUserRepository) *Program {
-	return &Program{userRepository: userRepository}
+func NewUserApplicationService(userRepository UserRepository) *UserApplicationService {
+	return &UserApplicationService{userRepository: userRepository}
 }
 
-// ユーザ作成し、保存するメソッド
-func (p *Program) CreateUser(userName string) {
-	// ユーザー作成
-	user := NewUser(NewUserName(userName))
-	// 保存(永続化)
-	p.userRepository.Save(user)
+// ユーザを作成して保存する（永続化）
+func (s *UserApplicationService) CreateUser(userName string) error {
+	// ユーザ作成
+	user, err := NewUser(NewUserName(userName))
+	if err != nil {
+		return err
+	}
+	// 保存（永続化）
+	return s.userRepository.Save(user)
 }
 ```
 
 ```go
 type UserService struct {
-	// ユーザリポジトリインターフェースに依存
-	userRepository IUserRepository
+	// ユーザリポジトリのインターフェースに依存する
+	userRepository UserRepository
 }
 
-func NewUserService(userRepository IUserRepository) *UserService {
+func NewUserService(userRepository UserRepository) *UserService {
 	return &UserService{userRepository: userRepository}
 }
 
-// ユーザが存在するか判断
+// ユーザが存在するか判断する（再構築した結果で判定する）
 func (s *UserService) Exists(user User) bool {
-	// ユーザ名よりユーザ情報を取得(再構築)
-	found := s.userRepository.Find(user.name)
+	// ユーザ名からユーザを再構築する
+	found, err := s.userRepository.FindByName(user.name)
+	if err != nil {
+		return false
+	}
 	return found != nil
 }
 ```
 
 - 大事なのはリポジトリは、データの**永続化と再構築だけ**を担う
-- 以下のように、ユーザを引数として受け取り、存在するかどうかを返す exist メソッドをリポジトリにはおかない
+- 以下のように、ユーザを引数として受け取り、存在するかどうかを返す Exists メソッドをリポジトリにはおかない
 - ユーザが存在するかどうかは、ドメイン側の知識なのでドメインサービスに持たせるべき
 
 ```go
-type IUserRepository interface {
+type UserRepository interface {
 	// 永続化なので◯
-	Save(user User)
+	Save(user User) error
 	// ユーザ名よりユーザ情報を返すデータの再構築なので◯
-	Find(userName UserName) *User
-	// ユーザ名より存在しているかどうかの判定するのでデータを再構築していないため❌
-	Exist(userName UserName) bool
+	FindByName(userName UserName) (*User, error)
+	// 存在判定だけで再構築していないため❌
+	Exists(userName UserName) bool
 }
 ```
 
@@ -489,24 +492,27 @@ type IUserRepository interface {
 - データベース特有の記述をして OK
 
 ```go
-type UserRepository struct{}
+type MySQLUserRepository struct{}
 
-func (r *UserRepository) Find(user User) *User {
+func (r *MySQLUserRepository) FindByName(name UserName) (*User, error) {
 	// database特有の書き方
-	return nil
+	return nil, nil
 }
 
-func (r *UserRepository) Save(userName UserName) {
+func (r *MySQLUserRepository) Save(user User) error {
 	// database特有の書き方
+	return nil
 }
 ```
 
 ## 利用
 
 ```go
-userRepository := &UserRepository{}
-program := NewProgram(userRepository)
-program.CreateUser("taro")
+userRepository := &MySQLUserRepository{}
+svc := NewUserApplicationService(userRepository)
+if err := svc.CreateUser("taro"); err != nil {
+	log.Fatal(err)
+}
 ```
 
 ## リポジトリのインターフェース
@@ -517,8 +523,8 @@ program.CreateUser("taro")
 
 ```go
 type UserRepository interface {
-	Save(user User)
-	Find(userName UserName) *User
+	Save(user User) error
+	FindByName(userName UserName) (*User, error)
 }
 ```
 
@@ -526,7 +532,6 @@ type UserRepository interface {
 
 - テスト用にデータベースを用意して、テストごとにデータテーブルを用意するのは手間と時間がかかる
 - 実際にデータベースを用意するのではなく、メモリ上をデータベースに見立ててテストすると気軽にテストを実施できる
-- Go では map を利用
 
 ```go
 type InMemoryUserRepository struct {
@@ -542,23 +547,24 @@ func NewInMemoryUserRepository() *InMemoryUserRepository {
 	}
 }
 
-func (r *InMemoryUserRepository) Find(userName UserName) *User {
-	for userID, user := range r.store {
-		if userName.Equals(user.name) {
-			cloned := r.clone(NewUser(userName, userID))
-			return &cloned
+func (r *InMemoryUserRepository) FindByName(userName UserName) (*User, error) {
+	for _, user := range r.store {
+		if userName == user.name {
+			cloned := r.clone(user)
+			return &cloned, nil
 		}
 	}
+	return nil, nil
+}
+
+func (r *InMemoryUserRepository) Save(user User) error {
+	r.store[user.id.String()] = r.clone(user)
 	return nil
 }
 
-func (r *InMemoryUserRepository) Save(user User) {
-	r.store[user.id] = r.clone(user)
-}
-
-// ディープコピー
+// 値型なので代入でコピーになる
 func (r *InMemoryUserRepository) clone(user User) User {
-	return NewUser(user.name, user.id)
+	return user
 }
 ```
 
@@ -566,12 +572,14 @@ func (r *InMemoryUserRepository) clone(user User) User {
 
 ```go
 func TestCreateUser(t *testing.T) {
-	userRepository := NewInMemoryUserRepository()
-	program := NewProgram(userRepository)
-	program.CreateUser("taro")
-	head := userRepository.store["1"]
-	if head != (User{name: "taro", id: "1"}) {
-		t.Errorf("unexpected user: %+v", head)
+	repo := NewInMemoryUserRepository()
+	svc := NewUserApplicationService(repo)
+	if err := svc.CreateUser("taro"); err != nil {
+		t.Fatal(err)
+	}
+	got := repo.store["1"]
+	if got.name != "taro" {
+		t.Errorf("unexpected user: %+v", got)
 	}
 }
 ```
@@ -602,17 +610,17 @@ func TestCreateUser(t *testing.T) {
 
 ```go
 // ダメ
-type IUserRepository interface {
-	UpdateName(id UserId, name UserName)
+type UserRepository interface {
+	UpdateName(id UserID, name UserName) error
 }
 ```
 
 - 値の更新はオブジェクトに持たせる
 
 ```go
-func (u *User) UpdateName(id UserId, name UserName) {
-	// データベースに対して更新の処理を入れる？
-	// ややこしい処理がくるけどOK？？
+func (u *User) ChangeName(name UserName) error {
+	u.name = name
+	return nil
 }
 ```
 
@@ -620,20 +628,19 @@ func (u *User) UpdateName(id UserId, name UserName) {
 
 ```go
 // ok
-type IUserRepository interface {
-	Delete(user User)
+type UserRepository interface {
+	Delete(user User) error
 }
 ```
 
 ### 再構築
 
-- Go にはオーバーロードがないため、メソッド名を分ける
+- 検索条件ごとにメソッドを分ける
 
 ```go
-// Go にはオーバーロードがないため、メソッド名を分ける
-type IUserRepository interface {
-	FindByID(userID UserId) *User
-	FindByName(name UserName) *User
+type UserRepository interface {
+	FindByID(id UserID) (*User, error)     // ID で再構築する
+	FindByName(name UserName) (*User, error) // 名前で再構築する
 }
 ```
 
@@ -730,7 +737,7 @@ type IUserRepository interface {
 
 - ユーザに関するモジュール処理はパッケージとしてまとめる
   - パッケージはディレクトリ単位に切り分けて実現
-    - Application/Users/UserDeleteService
+    - application/user/
 
 ![アプリケーションサービスのパッケージ構成](./diagrams/ch06-package.svg)
 
@@ -807,73 +814,64 @@ type ObjectA struct {
 
 ## IoC Container パターン
 
-- リポジトリを利用するアプリケーションサービスは、リポジトリを変えるたびに少し修正する必要がある
-  - 下位レベル(リポジトリ)の使い分けにアプリケーションサービスを修正する必要があるのは良くない
+- リポジトリを利用するアプリケーションサービスは、リポジトリをコンストラクタの引数で受け取る
 
 ```go
 type UserApplicationService struct {
-	userRepository IUserRepository
+	// ユーザリポジトリのインターフェースに依存する
+	userRepository UserRepository
 }
 
+func NewUserApplicationService(userRepository UserRepository) *UserApplicationService {
+	return &UserApplicationService{userRepository: userRepository}
+}
+
+// 本番
+svc := NewUserApplicationService(NewMySQLUserRepository())
+
+// テスト
+svc := NewUserApplicationService(NewInMemoryUserRepository())
+```
+
+- コンストラクタ内で実装を new すると、差し替えのたびにアプリケーションサービスを直すことになる
+
+```go
 func NewUserApplicationService() *UserApplicationService {
 	return &UserApplicationService{
-		// テスト用
-		// userRepository: NewTestUserRepository(),
-
-		// 本番用
-		userRepository: NewUserRepository(),
+		userRepository: NewMySQLUserRepository(), // 実装にべったり依存
 	}
 }
 ```
 
-- Service Locator パターンを利用することで使うリポジトリに応じて、アプリケーションサービスを修正する必要がなくなるが、以下の問題が残る
-  - 依存関係を登録することがわかりにくい
-    - new を利用して通常のインスタンス生成するので、登録する依存関係があるのがわかりにくい
-  - テストが壊れやすい
-    - テストを実行するまでわからない
+- Service Locator は依存が分かりにくく、テストが壊れやすい
 
 ```go
-type UserApplicationService struct {
-	userRepository IUserRepository
-}
-
 func NewUserApplicationService() *UserApplicationService {
-	return &UserApplicationService{
-		// 利用するリポジトリに応じてアプリケーションサービスは変更しなくて済む
-		userRepository: ServiceLocator.Resolve[IUserRepository](),
-	}
+	userRepository, _ := ServiceLocator.Get("UserRepository")
+	return &UserApplicationService{userRepository: userRepository.(UserRepository)}
 }
 ```
 
-- Service Locator パターンのデメリットを補うため、IoC(Inversion of Control)「制御の反転」パターンを利用
-  - DI コンテナーライブラリでは通常のインスタンス生成を実施しない
-    - 依存関係の登録も忘れにくい
-  - DI によりテストが壊れやすい問題を解決
-    - エラーが出るため、修正を強制できる
+- 規模が大きくなったら DI コンテナも選択肢になる
 
 ```go
-// DIコンテナーライブラリであるuber/dig を利用した例
-// 利用するリポジトリに応じてアプリケーションサービスは変更する必要がない
-type UserApplicationService struct {
-	userRepository IUserRepository
-}
-
-// 依存は注入させる(DI)ことで修正することは無くなった
-func NewUserApplicationService(userRepository IUserRepository) *UserApplicationService {
+func NewUserApplicationService(userRepository UserRepository) *UserApplicationService {
 	return &UserApplicationService{userRepository: userRepository}
 }
 
 container := dig.New()
 
 // 依存関係の登録
-container.Provide(NewUserRepository)
+container.Provide(NewMySQLUserRepository)
 container.Provide(NewUserApplicationService)
 
-// userApplicationServiceのインスタンス化
-var userApplicationService *UserApplicationService
-container.Invoke(func(s *UserApplicationService) {
-	userApplicationService = s
-})
+// インスタンス化
+var svc *UserApplicationService
+if err := container.Invoke(func(s *UserApplicationService) {
+	svc = s
+}); err != nil {
+	log.Fatal(err)
+}
 ```
 
 ## まとめ
@@ -938,13 +936,13 @@ container.Invoke(func(s *UserApplicationService) {
 
 ```go
 type User struct {
-	userID UserId
+	userID UserID
 	name   UserName
 }
 
 func NewUser(name UserName) (*User, error) {
 	if name == (UserName{}) {
-		return nil, errors.New("名前がないです")
+		return nil, errors.New("名前が必要です")
 	}
 	// データベースの処理
 	db, err := sql.Open("mysql", "user:password@/")
@@ -961,7 +959,7 @@ func NewUser(name UserName) (*User, error) {
 	}
 
 	return &User{
-		userID: NewUserId(sequenceID),
+		userID: NewUserID(sequenceID),
 		name:   name,
 	}, nil
 }
@@ -971,14 +969,14 @@ func NewUser(name UserName) (*User, error) {
 
 ```go
 // インターフェースを作成することで異なるDB利用となってもすぐ変更可能
-type IUserFactory interface {
-	Create(name UserName) *User
+type UserFactory interface {
+	Create(name UserName) (*User, error)
 }
 
 // ユーザ作成をするためのファクトリ
-type UserFactory struct{}
+type MySQLUserFactory struct{}
 
-func (f *UserFactory) Create(name UserName) (*User, error) {
+func (f *MySQLUserFactory) Create(name UserName) (*User, error) {
 	db, err := sql.Open("mysql", "user:password@/")
 	if err != nil {
 		return nil, err
@@ -992,22 +990,22 @@ func (f *UserFactory) Create(name UserName) (*User, error) {
 		return nil, err
 	}
 	// uuidを利用する場合は、sequenceID := uuid.NewString() でもOK
-	userID := NewUserId(sequenceID)
+	userID := NewUserID(sequenceID)
 	return NewUser(name, userID)
 }
 
 // ユーザオブジェクトはシンプルになる
 type User struct {
-	userID UserId
+	userID UserID
 	name   UserName
 }
 
-func NewUser(name UserName, userID UserId) (*User, error) {
+func NewUser(name UserName, userID UserID) (*User, error) {
 	if name == (UserName{}) {
-		return nil, errors.New("名前がないです")
+		return nil, errors.New("名前が必要です")
 	}
-	if userID == (UserId{}) {
-		return nil, errors.New("userIdがないです")
+	if userID == (UserID{}) {
+		return nil, errors.New("idが必要です")
 	}
 	return &User{userID: userID, name: name}, nil
 }
@@ -1015,21 +1013,20 @@ func NewUser(name UserName, userID UserId) (*User, error) {
 
 ```go
 // 利用
-userFactory := &UserFactory{}
+userFactory := &MySQLUserFactory{}
 // ファクトリー経由でユーザ作成
 user, err := userFactory.Create(userName)
 ```
 
-- 実際のデータベースを触らない場合は、IUserFactory を利用してテスト用ファクトリクラスを作成するだけで OK
+- 実際のデータベースを触らない場合は、UserFactory を満たすテスト用の実装を作るだけで OK
 
 - ファクトリの存在を気づかせるディレクトリ構成
 
 ```
-// こうするとわかりやすい
-./domain/sns/models/user.go
-./domain/sns/models/user_factory.go
-./factory/models/user_factory.go
-./factory/models/inmemory_user_factory.go
+./domain/user/user.go
+./domain/user/factory.go
+./infrastructure/mysql/user_factory.go
+./infrastructure/memory/user_factory.go
 ```
 
 ## DB の自動採番の利用
@@ -1037,7 +1034,7 @@ user, err := userFactory.Create(userName)
 - 自動採番の利用には注意が必要
 
   - ユーザを識別する値なので保存するまで採番されないのは不自然
-  - 保存してから userId をユーザクラスにセットするため、セッターが必要
+  - 保存してから userID をユーザ型にセットするため、セッターが必要
     - セッターは不本意に値が変えられる可能性があるため利用すべきでない
 
   **ルールを決める必要がある**
@@ -1048,29 +1045,29 @@ user, err := userFactory.Create(userName)
 
 ```go
 type User struct {
-	userID UserId
+	userID UserID
 }
 
-func (u User) ID() UserId {
+func (u User) ID() UserID {
 	return u.userID
 }
 
 // 利用側
 user, _ := userFactory.Create(name)
 group := NewGroup(
-	user.ID(), // userIdをゲッターより取得
+	user.ID(), // userIDをゲッターより取得
 	NewGroupName("サーフィン"),
 )
 ```
 
-- ゲッターを利用している箇所を元のクラスでやってみるとゲッターが不要になる
+- ゲッターを利用している箇所を元の型へ移せないか検討すると、ゲッターが不要になる
   - 依存度が小さく
   - より高いレベルのルールがわかる
-  - **セッター、ゲッターを利用している処理は、利用元クラスに移動できないか検討**
+  - **セッター、ゲッターを利用している処理は、利用元の型に移動できないか検討**
 
 ```go
 type User struct {
-	userID UserId
+	userID UserID
 }
 
 func (u User) CreateGroup(name GroupName) Group {
@@ -1090,7 +1087,7 @@ group := user.CreateGroup(NewGroupName("サーフィン")) // あるユーザが
 ## まとめ
 
 - 複雑な処理をファクトリなどによりカプセル化することでより明瞭、柔軟なコードになる
-- セッター、ゲッターを利用している処理は、利用元クラスに移動できないか検討
+- セッター、ゲッターを利用している処理は、利用元の型に移動できないか検討
   - セッター、ゲッターもなるべく利用しない
 - コンストラクタが複雑な場合、ファクトリがないかを検討
 
@@ -1135,7 +1132,7 @@ group := user.CreateGroup(NewGroupName("サーフィン")) // あるユーザが
   - ユニットオブワークを利用したパターン
 
 ```go
-// 関数のラップを利用した方法（Go には AOP がないため）
+// 関数のラップを利用した方法
 
 // ターゲット関数
 func myFunction() {
@@ -1172,7 +1169,7 @@ proxyFunction()
 # 12 章 集約
 
 - 全体(集約ルートのオブジェクト)-部分(集約境界内のオブジェクト)関係を表す
-  - 全体に当たるクラスが部分クラスを包含する
+  - 全体に当たる型が部分の型を包含する
 - 外部から集約の境界内のオブジェクトの操作は、集約ルートを通して行う
 - 集約のうち、集約境界内オブジェクトの操作はその集約ルートを通してのみ行う場合**コンポジション**と言い、菱形の黒塗りで表す
 
@@ -1220,7 +1217,7 @@ circle.members = append(circle.members, user)
 
 - ゲッターをなるべく利用しない
 - ゲッターで値だけを取得している箇所では、その値を利用してロジック(ルール)を記載する恐れあり
-  - そのロジック(ルール)を大元のクラス(ドメインオブジェクト)にもってきて、ゲッターを利用しない
+  - そのロジック(ルール)を大元の型(ドメインオブジェクト)にもってきて、ゲッターを利用しない
   - そうすることでデメテルも自然と守られる傾向がある
 - **ルールはドメインオブジェクトに収める**
 
@@ -1231,11 +1228,11 @@ circle.members = append(circle.members, user)
 
 ```go
 type User struct {
-	id   UserId
+	id   UserID
 	name UserName
 }
 
-func (u User) ID() UserId {
+func (u User) ID() UserID {
 	return u.id
 }
 
@@ -1243,79 +1240,79 @@ func (u User) Name() UserName {
 	return u.name
 }
 
-type UserRepository struct{}
+type MySQLUserRepository struct{}
 
-func (r *UserRepository) Save(user User) {
-	// user.ID().Value(), user.Name().Value() を利用してDB保存処理
+func (r *MySQLUserRepository) Save(user User) error {
+	// ゲッターで内部データを取り出して DB に保存する
 	id := user.ID()
 	name := user.Name()
 	saveData := map[string]any{"id": id, "name": name}
 	_ = saveData
-	// DBに保存するための後続処理
+	return nil
 }
 ```
 
 - それを解決するために通知オブジェクトを利用
 
 ```go
-type IUserNotification interface {
-	ID(userID UserId)
-	Name(userName UserName)
+type UserNotifier interface {
+	NotifyID(id UserID)
+	NotifyName(name UserName)
 }
 
 type UserDataModelBuilder struct {
-	id   UserId
+	id   UserID
 	name UserName
 }
 
-func (b *UserDataModelBuilder) ID(userID UserId) {
-	b.id = userID
+func (b *UserDataModelBuilder) NotifyID(id UserID) {
+	b.id = id
 }
 
-func (b *UserDataModelBuilder) Name(userName UserName) {
-	b.name = userName
+func (b *UserDataModelBuilder) NotifyName(name UserName) {
+	b.name = name
 }
 
-// リポジトリ内で利用する必要なデータ形式で返す
 func (b *UserDataModelBuilder) Build() map[string]string {
+	// リポジトリが使うデータ形式に変換する
 	return map[string]string{
-		"id":   b.id.Value(),
-		"name": b.name.Value(),
+		"id":   b.id.String(),
+		"name": b.name.String(),
 	}
 }
 
-// ユーザクラスにゲッターは不要になる
+// ユーザ型にゲッターは不要になる
 type User struct {
-	id   UserId
+	id   UserID
 	name UserName
 }
 
-func (u User) Notify(note IUserNotification) {
-	note.ID(u.id)
-	note.Name(u.name)
+func (u User) Notify(n UserNotifier) {
+	n.NotifyID(u.id)
+	n.NotifyName(u.name)
 }
 
-type UserRepository struct{}
+type MySQLUserRepository struct{}
 
-func (r *UserRepository) Save(user User) {
-	// 通知オブジェクトを渡して、内部データを取得
-	userDataModelBuilder := &UserDataModelBuilder{}
-	user.Notify(userDataModelBuilder)
-	// 内部データからデータモデルを取得
-	saveData := userDataModelBuilder.Build()
+func (r *MySQLUserRepository) Save(user User) error {
+	// 通知オブジェクトを渡して内部データを受け取る
+	builder := &UserDataModelBuilder{}
+	user.Notify(builder)
+	saveData := builder.Build()
 	_ = saveData
+	return nil
 }
 ```
 
-- ただ、値オブジェクトのゲッターは仕方ない
+- ただ、値オブジェクトを文字列にする処理は仕方ない
 
 ```go
-type UserId struct {
+type UserID struct {
 	id string
 }
 
-func (u UserId) Value() string {
-	return u.id
+func (id UserID) String() string {
+	return id.id
 }
 ```
 
@@ -1332,12 +1329,11 @@ func (u UserId) Value() string {
   - メモリの節約
   - 不慮のメソッド呼び出しがなくなる
 
-![Circle 集約に UserId だけ含める](./diagrams/ch12-aggregate-userid.svg)
+![Circle 集約に UserID だけ含める](./diagrams/ch12-aggregate-userid.svg)
 
-## id のゲッターの是非
+## ID のゲッターの是非
 
-- id を利用して、ビジネスロジック、ルールを記述することがほとんどないため、ゲッターにしても問題になることが少ない
-- 逆に、取り扱いやすい場合もあるため、ゲッターを利用することも考える
+- ID を利用してビジネスロジックを書くことはほとんどないため、ゲッターにしても問題になりにくい
 
 ## 集約の単位
 
@@ -1366,13 +1362,13 @@ func (u UserId) Value() string {
   - リポジトリを使わないため
 
 ```go
-func (c Circle) IsFull(circleMember CircleMember) bool {
-	premiumUserNumber := c.members.CountPremiumMembers(false)
-	circleUpperLimit := 50
-	if premiumUserNumber < 10 {
-		circleUpperLimit = 30
+func (c Circle) IsFull() bool {
+	premium := c.members.CountPremium(false)
+	limit := 50
+	if premium < 10 {
+		limit = 30
 	}
-	return c.members.CountMember() == circleUpperLimit
+	return c.members.Len() >= limit
 }
 ```
 

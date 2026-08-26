@@ -1,8 +1,8 @@
 @startuml
 class Program {
   - serviceProvide: ServiceProvider
-  + main(): void
-  + startUp(): void
+  + main()
+  + run()
 }
 class IoC {
   + register()
@@ -10,13 +10,13 @@ class IoC {
 }
 
 class UserRegisterCommand {
-  + readonly id
-  + readonly name
-  + readonly email
+  + id string
+  + name string
+  + email string
 }
 
 class UserApplicationService {
-  + register(command: UserRegisterCommand): void
+  + Register(cmd UserRegisterCommand) error
 }
 Program --> IoC: 依存関係を登録、インスタンス取得
 Program -> UserRegisterCommand: ユースケースに必要なデータオブジェクト作成(ユーザ情報登録に必要なデータ作成)

@@ -2,16 +2,16 @@
 title 集約を表すクラス図
 
 class User {
-  - userId: UserId
+  - userID: UserID
   - userName: UserName
-  + changeName(userName: UserName): void
+  + ChangeName(userName UserName) error
 }
 note right
 * 集約ルートオブジェクト
 * 集約境界内オブジェクトの操作は、Userオブジェクトを通してのみ行う
 endnote
 
-class UserId {
+class UserID {
   - value: string
 }
 note bottom
@@ -25,6 +25,6 @@ note bottom
 集約境界内オブジェクト
 endnote
 
-User *-- UserId
+User *-- UserID
 User *-- UserName
 @enduml

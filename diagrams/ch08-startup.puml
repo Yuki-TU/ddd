@@ -10,17 +10,17 @@ note top
 endnote
 
 class DependencySetupFactory {
-  + createSetup(): IDependencySetup
+  + CreateSetup() DependencySetup
 }
 note top
 * IoC設定スクリプトを選択する
 endnote
 
 class SqlConnectionDependencySetup {
-  + run(service: IServiceCollection):: void
-  - setupRepository(service: IServiceCollection): void
-  - setupApplicationServices(service: IServiceCollection): void
-  - setupDomainService(service: IServiceCollection): void
+  + Run(container *dig.Container)
+  - setupRepository(container *dig.Container)
+  - setupApplicationServices(container *dig.Container)
+  - setupDomainService(container *dig.Container)
 }
 note top
 * IoC設定スクリプトの1つ

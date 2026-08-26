@@ -7,20 +7,20 @@ package Controller {
 package ApplicationService {
   package Circle {
     class CircleCreateService {
-      - circleRepository: ICircleRepository
+      - circleRepository: CircleRepository
       - circleService: CircleService
-      - circleFactory: ICircleFactory
-      - userRepository: IUserRepository
-      + handle(command: CircleCreateCommand): void
+      - circleFactory: CircleFactory
+      - userRepository: UserRepository
+      + Handle(cmd CircleCreateCommand) error
     }
   }
   package Command {
     package CircleCommand {
       class CircleCreateCommand {
         - circleName: string
-        - userId: string
-        + get circleName(): string
-        + get userId(): string
+        - userID: string
+        + CircleName() string
+        + UserID() string
       }
     }
   }
@@ -30,47 +30,47 @@ package Domain {
   package Model {
     package Circles {
       class Circle {
-        - circleId: CircleId
+        - circleID: CircleID
         - circleName: CircleName
         - owner: User
         - member: User[]
       }
       class CircleName {
         - value
-        + get value(): string
-        + equals(other: CircleName): boolean
+        + String() string
+        + Equal(other CircleName) bool
       }
-      class CircleId {
+      class CircleID {
         - value
-        + get value(): string
+        + String() string
       }
       Circle *-- CircleName
-      Circle *-- CircleId
+      Circle *-- CircleID
       
       class CircleService {
-        - circleRepository: ICircleRepository
-        + exist(circle: Circle): boolean
+        - circleRepository: CircleRepository
+        + Exists(circle Circle) bool
       }
-      interface ICircleFactory {
-        + create(name: CircleName, owner: User): Circle
+      interface CircleFactory {
+        + Create(name CircleName, owner User) (*Circle, error)
       }
-      interface ICircleRepository {
-        + save(circle: Circle): void
-        + find(circleId: CircleId): Circle
-        + find(circleName: CircleName): Circle
+      interface CircleRepository {
+        + Save(circle Circle) error
+        + FindByID(id CircleID) (*Circle, error)
+        + FindByName(name CircleName) (*Circle, error)
       }
     }
     package Users {
       class User {
-        - userId: UserId
+        - userID: UserID
         - userName: UserName
-        + get userId(): UserId
-        + get userName(): UserName
+        + ID() UserID
+        + Name() UserName
       }
-      interface IUserRepository {
-        + save(user: User): void
-        + find(userId: UserId): User
-        + find(userName: UserName): User
+      interface UserRepository {
+        + Save(user User) error
+        + FindByID(id UserID) (*User, error)
+        + FindByName(name UserName) (*User, error)
       }
     }
   }
@@ -78,7 +78,7 @@ package Domain {
   ' package Factory {
   '   package MySQL {
   '     class CircleFactory {
-  '       + create(name: CircleName, owner: User): Circle
+  '       + Create(name CircleName, owner User) (*Circle, error)
   '     }
   '   }
   ' }
@@ -87,37 +87,37 @@ Circle o--- User
 package Infrastructure {
   package Factory {
     package MySQL {
-      class CircleFactory {
-        + create(name: CircleName, owner: User): Circle
+      class MySQLCircleFactory {
+        + Create(name CircleName, owner User) (*Circle, error)
       }
     }
   }
   package Repository {
     package MySql {
-      class UserRepository {
-        + save(user: User): void
-        + find(userId: UserId): User
-        + find(userName: UserName): User
+      class MySQLUserRepository {
+        + Save(user User) error
+        + FindByID(id UserID) (*User, error)
+        + FindByName(name UserName) (*User, error)
       }
-      class CircleRepository {
-        + save(circle: Circle): void
-        + find(circleId: CircleId): Circle
-        + find(circleName: CircleName): Circle
+      class MySQLCircleRepository {
+        + Save(circle Circle) error
+        + FindByID(id CircleID) (*Circle, error)
+        + FindByName(name CircleName) (*Circle, error)
       }
     }
   }
 }
-CircleService --> ICircleRepository
-ICircleFactory <|-- CircleFactory
-CircleCreateService --> ICircleRepository
-CircleCreateService --> ICircleFactory
+CircleService --> CircleRepository
+CircleFactory <|-- MySQLCircleFactory
+CircleCreateService --> CircleRepository
+CircleCreateService --> CircleFactory
 CircleCreateService --> CircleService
-ICircleRepository <|-- CircleRepository
-IUserRepository <|-- UserRepository
-IUserRepository <-- CircleCreateService
+CircleRepository <|-- MySQLCircleRepository
+UserRepository <|-- MySQLUserRepository
+UserRepository <-- CircleCreateService
 CircleController --> CircleCreateService
 CircleCreateService -> CircleCreateCommand
 CircleController -> CircleCreateCommand
 ' Circle *-- CircleName
-' Circle *-- CircleId
+' Circle *-- CircleID
 @enduml

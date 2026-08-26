@@ -1,32 +1,32 @@
 @startuml
 UserApplicationService x--> UserData: 返却データ生成
 UserApplicationService x--> User: 値を利用する
-UserApplicationService x--> IUserRepository: ユーザ情報を取得
-IUserRepository .> User: 値の依存
+UserApplicationService x--> UserRepository: ユーザ情報を取得
+UserRepository .> User: 値の依存
 User <. UserData: 値の依存
 
 class User {
   - userName: UserName
-  - userId: UserId
+  - userID: UserID
 }
 class UserData {
   - userName: string
-  - userId: string
-  + get userName(): string
-  + get userId(): string
+  - userID: string
+  + Name() string
+  + UserID() string
 }
 note right
 DTO
 endnote
 
 class UserApplicationService {
-  - userRepository: IUserRepository
-  + get(userName: string): UserData
+  - userRepository: UserRepository
+  + Get(userName string) (*UserData, error)
 }
-interface IUserRepository {
-  find(id: UserId): User
-  find(name: UserName): User
-  save(user: User): void
-  delete(user: User): void
+interface UserRepository {
+  FindByID(id UserID) (*User, error)
+  FindByName(name UserName) (*User, error)
+  Save(user User) error
+  Delete(user User) error
 }
 @enduml

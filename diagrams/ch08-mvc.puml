@@ -2,8 +2,8 @@
 title コントローラーとクライアントとアプリケーションサービスの関係
 
 class UserController {
-  + constructor(userApplicationService: UserApplicationService): UserController
-  + post(request: UserPostRequestModel): void
+  + NewUserController(svc *UserApplicationService) *UserController
+  + Register(w http.ResponseWriter, r *http.Request)
 }
 note top
 * Controller
@@ -11,7 +11,7 @@ note top
 endnote
 
 class UserRegisterCommand {
-  + constructor(request: UserPostRequestModel): UserRegisterCommand
+  + NewUserRegisterCommand(req UserPostRequestModel) UserRegisterCommand
 }
 note top
 * コマンドオブジェクト
@@ -19,7 +19,7 @@ note top
 endnote
 
 class UserApplicationService {
-  register(command: UserRegisterCommand): void
+  Register(cmd UserRegisterCommand) error
 }
 note top
 * Model

@@ -1,8 +1,8 @@
 @startuml
 UserApplicationService x--> UserUpdateCommand: 更新データ取得
 UserApplicationService x--> User: 値を利用する(値更新)
-UserApplicationService x--> IUserRepository: ユーザを取得、及びユーザを上書き保存
-IUserRepository .> User: 値の依存
+UserApplicationService x--> UserRepository: ユーザを取得、及びユーザを上書き保存
+UserRepository .> User: 値の依存
 User <. UserUpdateCommand: 値の依存
 
 class UserUpdateCommand {
@@ -12,21 +12,21 @@ class UserUpdateCommand {
 }
 class User {
   - userName: UserName
-  - userId: UserId
+  - userID: UserID
   - userMail: UserMail
   - userAddress: UserAddress
-  + changeName(userName): void
-  + changeEmail(email): void
-  + changeAddress(address): void
+  + ChangeName(userName UserName) error
+  + ChangeEmail(email UserMail) error
+  + ChangeAddress(address UserAddress) error
 }
 class UserApplicationService {
-  - userRepository: IUserRepository
+  - userRepository: UserRepository
   - userService: UserService
-  + update(command: UserUpdateCommand): void
+  + Update(cmd UserUpdateCommand) error
 }
-interface IUserRepository {
-  find(id: UserId): User
-  find(name: UserName): User
-  save(user: User): void
+interface UserRepository {
+  FindByID(id UserID) (*User, error)
+  FindByName(name UserName) (*User, error)
+  Save(user User) error
 }
 @enduml

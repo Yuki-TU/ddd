@@ -1,18 +1,18 @@
 @startuml
 UserApplicationService x--> User: 値を利用する
-UserApplicationService x--> IUserRepository: ユーザ取得、及びユーザを削除
-IUserRepository .> User: 値の依存
+UserApplicationService x--> UserRepository: ユーザ取得、及びユーザを削除
+UserRepository .> User: 値の依存
 
 class User {
   - userName: UserName
-  - userId: UserId
+  - userID: UserID
 }
 class UserApplicationService {
-  - userRepository: IUserRepository
-  + delete(user: User): void
+  - userRepository: UserRepository
+  + Delete(user User) error
 }
-interface IUserRepository {
-  find(id: UserId): User
-  delete(user: User): void
+interface UserRepository {
+  FindByID(id UserID) (*User, error)
+  Delete(user User) error
 }
 @enduml

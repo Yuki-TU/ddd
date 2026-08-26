@@ -2,22 +2,22 @@
 package Application {
   package Users{
     class UserDeleteService {
-      - userRepository: IUserRepository
-      + delete(user: User): void
+      - userRepository: UserRepository
+      + Delete(user User) error
     }
     class UserRegisterService {
-      - userRepository: IUserRepository
+      - userRepository: UserRepository
       - userService: UserService
-      + register(userName: string): void
+      + Register(userName string) error
     }
     class UserGetService {
-      - userRepository: IUserRepository
-      + get(userName: string): UserData
+      - userRepository: UserRepository
+      + Get(userName string) (*UserData, error)
     }
     class UserUpdateService {
-      - userRepository: IUserRepository
+      - userRepository: UserRepository
       - userService: UserService
-      + update(command: UserUpdateCommand): void
+      + Update(cmd UserUpdateCommand) error
     }
   }
 }

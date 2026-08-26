@@ -1,11 +1,11 @@
 @startuml
-UserApplicationService .> UserMySqlRepository
+UserApplicationService .> MySQLUserRepository
 
 class UserApplicationService {
   - userRepository: UserRepository
 }
-class UserMySqlRepository {
-  - find(name: UserName): User
+class MySQLUserRepository {
+  - FindByName(name UserName) (*User, error)
 }
 note as note
 * これは上位(アプリケーションサービス)が下位(リポジトリ)に依存しているため原則に違反

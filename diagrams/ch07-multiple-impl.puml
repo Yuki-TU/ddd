@@ -1,19 +1,19 @@
 @startuml
-IUserRepository <|.. UserMySqlRepository
-IUserRepository <|..   UserFirebaseRepository
-UserApplicationService .> IUserRepository
+UserRepository <|.. MySQLUserRepository
+UserRepository <|..   UserFirebaseRepository
+UserApplicationService .> UserRepository
 
-interface IUserRepository {
-  find(name: UserName): User
+interface UserRepository {
+  FindByName(name UserName) (*User, error)
 }
 class UserApplicationService {
-  - userRepository: IUserRepository
+  - userRepository: UserRepository
 }
-class UserMySqlRepository {
-  - find(name: UserName): User
+class MySQLUserRepository {
+  - FindByName(name UserName) (*User, error)
 }
 class UserFirebaseRepository {
-  - find(name: UserName): User
+  - FindByName(name UserName) (*User, error)
 }
 note as note
 実現するオブジェクトはすぐ変更可能

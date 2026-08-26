@@ -2,12 +2,12 @@
 title 集約を表すクラス図
 
 class User {
-  - userId: UserId
+  - userID: UserID
   - userName: UserName
-  + changeName(userName: UserName): void
+  + ChangeName(userName UserName) error
 }
 
-class UserId {
+class UserID {
   - value: string
 }
 ' note bottom
@@ -19,10 +19,10 @@ class UserName {
 }
 class Circle {
   - circleName: CircleName
-  - circleId: CircleId
+  - circleID: CircleID
   - members: User[]
-  + changeCircleName(circleName: CircleName): void
-  + join(member: User): void
+  + ChangeName(name CircleName) error
+  + Join(member User) error
 }
 
 note left
@@ -33,13 +33,13 @@ endnote
 class CircleName {
   value: string
 }
-class CircleId {
+class CircleID {
   value: string
 }
 
-User *-- UserId: コンポジション
+User *-- UserID: コンポジション
 User *-- UserName: コンポジション
-Circle *-- CircleId: コンポジション
+Circle *-- CircleID: コンポジション
 Circle *-- CircleName: コンポジション
 Circle o-- User: 集約
 @enduml

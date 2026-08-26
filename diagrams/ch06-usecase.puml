@@ -1,39 +1,39 @@
 @startuml
 User "1" *-- "1" UserName
-User "1" *-- "1" UserId
+User "1" *-- "1" UserID
 User <.x UserService: 値として依存
-IUserRepository <|.. UserRepository: インターフェースの実現
-IUserRepository <--x UserService: 利用する
+UserRepository <|.. MySQLUserRepository: インターフェースの実現
+UserRepository <--x UserService: 利用する
 
-interface IUserRepository {
-  find(id: UserId): User
-  find(name: UserName): User
-  save(user: User): void
-  delete(user: User): void
+interface UserRepository {
+  FindByID(id UserID) (*User, error)
+  FindByName(name UserName) (*User, error)
+  Save(user User) error
+  Delete(user User) error
 }
 
-class UserRepository {
-  + find(id: UserId): User
-  + find(name: UserName): User
-  + save(user: User): void
-  + delete(user: User): void
+class MySQLUserRepository {
+  + FindByID(id UserID) (*User, error)
+  + FindByName(name UserName) (*User, error)
+  + Save(user User) error
+  + Delete(user User) error
 }
 
 class UserService {
-  - userRepository: IUserRepository
-  + exists(User): boolean
+  - userRepository: UserRepository
+  + Exists(user User) bool
 }
 class UserName {
   - userName: string
-  + get userName(): string
+  + Name() string
 }
-class UserId {
-  - userId: string
-  + get userId(): string
+class UserID {
+  - userID: string
+  + UserID() string
 }
 class User {
   - userName: UserName
-  - userId: UserId
-  + changeName(userName): void
+  - userID: UserID
+  + ChangeName(userName UserName) error
 }
 @enduml

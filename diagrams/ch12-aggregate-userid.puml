@@ -1,30 +1,30 @@
 @startuml
 title 集約を表すクラス図
 
-class UserId {
+class UserID {
   + value: string
 }
 
 class Circle {
   - circleName: CircleName
-  - circleId: CircleId
-  - members: UserId[]
-  + changeCircleName(circleName: CircleName): void
-  + join(member: User): void
+  - circleID: CircleID
+  - members: UserID[]
+  + ChangeName(name CircleName) error
+  + Join(member User) error
 }
 
 class CircleName {
-  + get value: string
+  + String() string
 }
-class CircleId {
-  + get value: string
+class CircleID {
+  + String() string
 }
 
 note left
-Circleの集約にはUserIdだけ含める
+Circleの集約にはUserIDだけ含める
 endnote
 
-Circle *-- CircleId: コンポジション
+Circle *-- CircleID: コンポジション
 Circle *-- CircleName: コンポジション
-Circle o-- UserId: 集約
+Circle o-- UserID: 集約
 @enduml

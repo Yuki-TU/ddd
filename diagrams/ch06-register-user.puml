@@ -2,28 +2,28 @@
 User <--x UserApplicationService: 値を利用する
 UserService <--x UserApplicationService: 重複確認
 User <.x UserService: 値として依存
-User <.x IUserRepository: 値として依存
+User <.x UserRepository: 値として依存
 
-IUserRepository <--x UserApplicationService: データストアに保存
+UserRepository <--x UserApplicationService: データストアに保存
 
-interface IUserRepository {
-  find(id: UserId): User
-  find(name: UserName): User
-  save(user: User): void
+interface UserRepository {
+  FindByID(id UserID) (*User, error)
+  FindByName(name UserName) (*User, error)
+  Save(user User) error
 }
 
 class UserService {
-  - userRepository: IUserRepository
-  + exists(User): boolean
+  - userRepository: UserRepository
+  + Exists(user User) bool
 }
 class User {
   - userName: UserName
-  - userId: UserId
+  - userID: UserID
 }
 class UserApplicationService {
-  - userRepository: IUserRepository
+  - userRepository: UserRepository
   - userService: UserService
-  + register(userName: string): void
+  + Register(userName string) error
 }
 note left
 値オブジェクトとドメインサービス、リポジトリを利用してユーザ登録を実現

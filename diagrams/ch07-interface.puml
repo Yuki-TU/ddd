@@ -1,13 +1,13 @@
 @startuml
-UserRepository ..|> IUserRepository: インターフェースの実装(実現)は点線白矢印
-class UserRepository {
-  - find(name: UserName): User
+MySQLUserRepository ..|> UserRepository: インターフェースの実装(実現)は点線白矢印
+class MySQLUserRepository {
+  - FindByName(name UserName) (*User, error)
 }
 note right
-UserRepositoryはIUserRepositoryを実現(具現化)
+MySQLUserRepositoryはUserRepositoryを実現(具現化)
 endnote
 
-interface IUserRepository {
-  find(name: UserName): User
+interface UserRepository {
+  FindByName(name UserName) (*User, error)
 }
 @enduml
