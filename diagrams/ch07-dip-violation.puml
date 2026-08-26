@@ -1,0 +1,14 @@
+@startuml
+UserApplicationService .> UserMySqlRepository
+
+class UserApplicationService {
+  - userRepository: UserRepository
+}
+class UserMySqlRepository {
+  - find(name: UserName): User
+}
+note as note
+* これは上位(アプリケーションサービス)が下位(リポジトリ)に依存しているため原則に違反
+* データストアを変えたい時、上位層のコードを変える必要がある
+endnote
+@enduml

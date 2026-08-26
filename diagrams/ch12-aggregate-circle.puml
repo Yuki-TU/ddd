@@ -1,0 +1,45 @@
+@startuml
+title 集約を表すクラス図
+
+class User {
+  - userId: UserId
+  - userName: UserName
+  + changeName(userName: UserName): void
+}
+
+class UserId {
+  - value: string
+}
+' note bottom
+' 集約境界内オブジェクト
+' endnote
+
+class UserName {
+  - value: string
+}
+class Circle {
+  - circleName: CircleName
+  - circleId: CircleId
+  - members: User[]
+  + changeCircleName(circleName: CircleName): void
+  + join(member: User): void
+}
+
+note left
+* User, Circleは集約関係のため、
+* ユーザの操作は集約ルートであるCircleを通して行うべき
+endnote
+
+class CircleName {
+  value: string
+}
+class CircleId {
+  value: string
+}
+
+User *-- UserId: コンポジション
+User *-- UserName: コンポジション
+Circle *-- CircleId: コンポジション
+Circle *-- CircleName: コンポジション
+Circle o-- User: 集約
+@enduml

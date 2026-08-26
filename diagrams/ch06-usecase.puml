@@ -1,0 +1,39 @@
+@startuml
+User "1" *-- "1" UserName
+User "1" *-- "1" UserId
+User <.x UserService: 値として依存
+IUserRepository <|.. UserRepository: インターフェースの実現
+IUserRepository <--x UserService: 利用する
+
+interface IUserRepository {
+  find(id: UserId): User
+  find(name: UserName): User
+  save(user: User): void
+  delete(user: User): void
+}
+
+class UserRepository {
+  + find(id: UserId): User
+  + find(name: UserName): User
+  + save(user: User): void
+  + delete(user: User): void
+}
+
+class UserService {
+  - userRepository: IUserRepository
+  + exists(User): boolean
+}
+class UserName {
+  - userName: string
+  + get userName(): string
+}
+class UserId {
+  - userId: string
+  + get userId(): string
+}
+class User {
+  - userName: UserName
+  - userId: UserId
+  + changeName(userName): void
+}
+@enduml

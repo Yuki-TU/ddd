@@ -1,0 +1,13 @@
+@startuml
+UserRepository ..|> IUserRepository: インターフェースの実装(実現)は点線白矢印
+class UserRepository {
+  - find(name: UserName): User
+}
+note right
+UserRepositoryはIUserRepositoryを実現(具現化)
+endnote
+
+interface IUserRepository {
+  find(name: UserName): User
+}
+@enduml

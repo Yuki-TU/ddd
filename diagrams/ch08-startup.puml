@@ -1,0 +1,33 @@
+@startuml
+title サーバー起動時の依存関係登録
+
+class Startup {
+  + startup()
+}
+note top
+* サーバー起動時の処理
+* IoCコンテナの依存関係登録
+endnote
+
+class DependencySetupFactory {
+  + createSetup(): IDependencySetup
+}
+note top
+* IoC設定スクリプトを選択する
+endnote
+
+class SqlConnectionDependencySetup {
+  + run(service: IServiceCollection):: void
+  - setupRepository(service: IServiceCollection): void
+  - setupApplicationServices(service: IServiceCollection): void
+  - setupDomainService(service: IServiceCollection): void
+}
+note top
+* IoC設定スクリプトの1つ
+* 依存関係の登録
+endnote
+
+Startup x--> DependencySetupFactory
+Startup x--> SqlConnectionDependencySetup
+DependencySetupFactory x--> SqlConnectionDependencySetup
+@enduml

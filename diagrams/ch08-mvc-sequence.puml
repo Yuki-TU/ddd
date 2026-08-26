@@ -1,0 +1,25 @@
+@startuml
+title コントローラーとクライアントとアプリケーションサービスの関係
+hide footbox
+actor client
+participant "コントローラー:UserController" as controller
+participant "データ作成:UserRegisterCommand" as command
+participant "ユーザ登録を実現:UserApplicationService" as service
+
+activate client
+client ->> controller: ユーザ登録リクエスト(postData)
+note left
+* webであればフロントエンド
+* 非同期リクエスト
+endnote
+activate controller
+controller -> command: command = ユーザ登録に必要なデータ作成(postData)
+activate command
+deactivate command
+
+controller -> service: ユーザ登録(command)
+activate service
+deactivate service
+deactivate controller
+deactivate client
+@enduml

@@ -1,0 +1,21 @@
+@startuml
+IUserRepository <|.. UserMySqlRepository
+IUserRepository <|..   UserFirebaseRepository
+UserApplicationService .> IUserRepository
+
+interface IUserRepository {
+  find(name: UserName): User
+}
+class UserApplicationService {
+  - userRepository: IUserRepository
+}
+class UserMySqlRepository {
+  - find(name: UserName): User
+}
+class UserFirebaseRepository {
+  - find(name: UserName): User
+}
+note as note
+実現するオブジェクトはすぐ変更可能
+endnote
+@enduml

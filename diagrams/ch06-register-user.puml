@@ -1,0 +1,31 @@
+@startuml
+User <--x UserApplicationService: 値を利用する
+UserService <--x UserApplicationService: 重複確認
+User <.x UserService: 値として依存
+User <.x IUserRepository: 値として依存
+
+IUserRepository <--x UserApplicationService: データストアに保存
+
+interface IUserRepository {
+  find(id: UserId): User
+  find(name: UserName): User
+  save(user: User): void
+}
+
+class UserService {
+  - userRepository: IUserRepository
+  + exists(User): boolean
+}
+class User {
+  - userName: UserName
+  - userId: UserId
+}
+class UserApplicationService {
+  - userRepository: IUserRepository
+  - userService: UserService
+  + register(userName: string): void
+}
+note left
+値オブジェクトとドメインサービス、リポジトリを利用してユーザ登録を実現
+endnote
+@enduml

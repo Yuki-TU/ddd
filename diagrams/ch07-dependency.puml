@@ -1,0 +1,14 @@
+@startuml
+ObjectA ..> ObjectB: 依存関係は点線
+class ObjectA {
+  - objectB: ObjectB
+}
+note right
+ObjectAはObjectBに依存
+endnote
+
+class ObjectB {}
+note right
+ObjectBはObjectAのことは知らない
+endnote
+@enduml

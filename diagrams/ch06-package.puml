@@ -1,0 +1,24 @@
+@startuml
+package Application {
+  package Users{
+    class UserDeleteService {
+      - userRepository: IUserRepository
+      + delete(user: User): void
+    }
+    class UserRegisterService {
+      - userRepository: IUserRepository
+      - userService: UserService
+      + register(userName: string): void
+    }
+    class UserGetService {
+      - userRepository: IUserRepository
+      + get(userName: string): UserData
+    }
+    class UserUpdateService {
+      - userRepository: IUserRepository
+      - userService: UserService
+      + update(command: UserUpdateCommand): void
+    }
+  }
+}
+@enduml

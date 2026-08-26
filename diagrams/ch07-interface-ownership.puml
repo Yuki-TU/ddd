@@ -1,0 +1,24 @@
+@startuml
+package Application {
+  class UserApplicationService {
+    - userRepository: IUserRepository
+  }
+
+  interface IUserRepository {
+    find(name: UserName): User
+  }
+}
+note right
+* インターフェースの主導権は上位レベルに持たせる
+endnote
+
+class UserMySqlRepository {
+  - find(name: UserName): User
+}
+note right
+* 下位レベルが上位レベルに合わせる
+endnote
+
+IUserRepository <|.. UserMySqlRepository
+UserApplicationService .> IUserRepository
+@enduml

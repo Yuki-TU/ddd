@@ -667,81 +667,13 @@ type IUserRepository interface {
   - ユーザ情報を作成
   - ユーザ情報を削除
 
-```plantuml
-User "1" *-- "1" UserName
-User "1" *-- "1" UserId
-User <.x UserService: 値として依存
-IUserRepository <|.. UserRepository: インターフェースの実現
-IUserRepository <--x UserService: 利用する
-
-interface IUserRepository {
-  find(id: UserId): User
-  find(name: UserName): User
-  save(user: User): void
-  delete(user: User): void
-}
-
-class UserRepository {
-  + find(id: UserId): User
-  + find(name: UserName): User
-  + save(user: User): void
-  + delete(user: User): void
-}
-
-class UserService {
-  - userRepository: IUserRepository
-  + exists(User): boolean
-}
-class UserName {
-  - userName: string
-  + get userName(): string
-}
-class UserId {
-  - userId: string
-  + get userId(): string
-}
-class User {
-  - userName: UserName
-  - userId: UserId
-  + changeName(userName): void
-}
-```
+![ユーザ機能のクラス図](./diagrams/ch06-usecase.svg)
 
 ## 1. ユーザを登録する
 
 - ユーザの重複がないかを確認し、重複がなければ登録
 
-```plantuml
-User <--x UserApplicationService: 値を利用する
-UserService <--x UserApplicationService: 重複確認
-User <.x UserService: 値として依存
-User <.x IUserRepository: 値として依存
-
-IUserRepository <--x UserApplicationService: データストアに保存
-
-interface IUserRepository {
-  find(id: UserId): User
-  find(name: UserName): User
-  save(user: User): void
-}
-
-class UserService {
-  - userRepository: IUserRepository
-  + exists(User): boolean
-}
-class User {
-  - userName: UserName
-  - userId: UserId
-}
-class UserApplicationService {
-  - userRepository: IUserRepository
-  - userService: UserService
-  + register(userName: string): void
-}
-note left
-値オブジェクトとドメインサービス、リポジトリを利用してユーザ登録を実現
-endnote
-```
+![ユーザ登録](./diagrams/ch06-register-user.svg)
 
 ## 2. ユーザ情報を取得
 
@@ -755,38 +687,7 @@ endnote
   - Data Transfer Object はデータを転送するためだけのオブジェクト
   - User 情報を DTO に移し替えて返すことで、ドメインオブジェクトはアプリケーションサービス以外からアクセスさせない
 
-```plantuml
-UserApplicationService x--> UserData: 返却データ生成
-UserApplicationService x--> User: 値を利用する
-UserApplicationService x--> IUserRepository: ユーザ情報を取得
-IUserRepository .> User: 値の依存
-User <. UserData: 値の依存
-
-class User {
-  - userName: UserName
-  - userId: UserId
-}
-class UserData {
-  - userName: string
-  - userId: string
-  + get userName(): string
-  + get userId(): string
-}
-note right
-DTO
-endnote
-
-class UserApplicationService {
-  - userRepository: IUserRepository
-  + get(userName: string): UserData
-}
-interface IUserRepository {
-  find(id: UserId): User
-  find(name: UserName): User
-  save(user: User): void
-  delete(user: User): void
-}
-```
+![ユーザ情報の取得](./diagrams/ch06-get-user.svg)
 
 - UserData のコンストラクタに渡す引数はドメインオブジェクトのインスタンスそのものを渡す
   - ドメインオブジェクトのインスタンスプロパティが増えても、修正が DTO(UserData)のみで済む
@@ -806,62 +707,14 @@ interface IUserRepository {
     - 実装側の中身だけを変えるだけで済む
 - リポジトリの save メソッドは SQL を使うのであれば `upsert` を利用
 
-```plantuml
-UserApplicationService x--> UserUpdateCommand: 更新データ取得
-UserApplicationService x--> User: 値を利用する(値更新)
-UserApplicationService x--> IUserRepository: ユーザを取得、及びユーザを上書き保存
-IUserRepository .> User: 値の依存
-User <. UserUpdateCommand: 値の依存
-
-class UserUpdateCommand {
-  - email: string
-  - name: string
-  - address: string
-}
-class User {
-  - userName: UserName
-  - userId: UserId
-  - userMail: UserMail
-  - userAddress: UserAddress
-  + changeName(userName): void
-  + changeEmail(email): void
-  + changeAddress(address): void
-}
-class UserApplicationService {
-  - userRepository: IUserRepository
-  - userService: UserService
-  + update(command: UserUpdateCommand): void
-}
-interface IUserRepository {
-  find(id: UserId): User
-  find(name: UserName): User
-  save(user: User): void
-}
-```
+![ユーザ情報の更新](./diagrams/ch06-update-user.svg)
 
 ## 4. 退会処理
 
 - ユースケース
   - アカウントが不要になったら退会を実施する
 
-```plantuml
-UserApplicationService x--> User: 値を利用する
-UserApplicationService x--> IUserRepository: ユーザ取得、及びユーザを削除
-IUserRepository .> User: 値の依存
-
-class User {
-  - userName: UserName
-  - userId: UserId
-}
-class UserApplicationService {
-  - userRepository: IUserRepository
-  + delete(user: User): void
-}
-interface IUserRepository {
-  find(id: UserId): User
-  delete(user: User): void
-}
-```
+![退会処理](./diagrams/ch06-withdraw.svg)
 
 ## アプリケーションサービスにドメインオブジェクトのルールを持ってこない
 
@@ -873,55 +726,13 @@ interface IUserRepository {
 - 凝縮度の高いモジュールは、再利用性、可読性、堅牢性、信頼性が高いため、なるべく凝縮度を上げるべき
 - インスタンス変数は全てのメソッドで利用するモジュールは凝縮度が高い
 
-```plantuml
-class UserDeleteService {
-  - userRepository: IUserRepository
-  + delete(user: User): void
-}
-class UserRegisterService {
-  - userRepository: IUserRepository
-  - userService: UserService
-  + register(userName: string): void
-}
-class UserGetService {
-  - userRepository: IUserRepository
-  + get(userName: string): UserData
-}
-class UserUpdateService {
-  - userRepository: IUserRepository
-  - userService: UserService
-  + update(command: UserUpdateCommand): void
-}
-```
+![ユースケースごとのアプリケーションサービス](./diagrams/ch06-cohesion.svg)
 
 - ユーザに関するモジュール処理はパッケージとしてまとめる
   - パッケージはディレクトリ単位に切り分けて実現
     - Application/Users/UserDeleteService
 
-```plantuml
-package Application {
-  package Users{
-    class UserDeleteService {
-      - userRepository: IUserRepository
-      + delete(user: User): void
-    }
-    class UserRegisterService {
-      - userRepository: IUserRepository
-      - userService: UserService
-      + register(userName: string): void
-    }
-    class UserGetService {
-      - userRepository: IUserRepository
-      + get(userName: string): UserData
-    }
-    class UserUpdateService {
-      - userRepository: IUserRepository
-      - userService: UserService
-      + update(command: UserUpdateCommand): void
-    }
-  }
-}
-```
+![アプリケーションサービスのパッケージ構成](./diagrams/ch06-package.svg)
 
 ## アプリケーションサービスのインターフェース
 
@@ -958,66 +769,21 @@ type ObjectA struct {
 }
 ```
 
-```plantuml
-ObjectA ..> ObjectB: 依存関係は点線
-class ObjectA {
-  - objectB: ObjectB
-}
-note right
-ObjectAはObjectBに依存
-endnote
-
-class ObjectB {}
-note right
-ObjectBはObjectAのことは知らない
-endnote
-```
+![依存関係](./diagrams/ch07-dependency.svg)
 
 ## インターフェースに依存
 
 - インターフェースに対しても依存が成り立つ
   - インターフェースを実装することを**実現**という
 
-```plantuml
-UserRepository ..|> IUserRepository: インターフェースの実装(実現)は点線白矢印
-class UserRepository {
-  - find(name: UserName): User
-}
-note right
-UserRepositoryはIUserRepositoryを実現(具現化)
-endnote
-
-interface IUserRepository {
-  find(name: UserName): User
-}
-```
+![インターフェースの実現](./diagrams/ch07-interface.svg)
 
 - 利用側はインターフェースに依存させ、実装もインターフェースをもとに実現する
   - 利用側は特定のオブジェクトに依存しなくなる
   - 利用者側(アプリケーションサービス側)はコードを変更せずにリポジトリを変更できるようになる
   - リポジトリ実現する人と、アプリケーションサービスを作成する人はお互いの実装を気にせず実装できる
 
-```plantuml
-IUserRepository <|.. UserMySqlRepository
-IUserRepository <|..   UserFirebaseRepository
-UserApplicationService .> IUserRepository
-
-interface IUserRepository {
-  find(name: UserName): User
-}
-class UserApplicationService {
-  - userRepository: IUserRepository
-}
-class UserMySqlRepository {
-  - find(name: UserName): User
-}
-class UserFirebaseRepository {
-  - find(name: UserName): User
-}
-note as note
-実現するオブジェクトはすぐ変更可能
-endnote
-```
+![複数のリポジトリ実装](./diagrams/ch07-multiple-impl.svg)
 
 ## 依存関係逆転の原則
 
@@ -1031,66 +797,13 @@ endnote
 - 上位レベルはよりドメインに近いもの
   - アプリケーションサービスとデータストアを扱うリポジトリの実装を比べるとアプリケーションサービスの方が上位レベル
 
-```plantuml
-UserApplicationService .> UserMySqlRepository
+![依存関係逆転の原則への違反](./diagrams/ch07-dip-violation.svg)
 
-class UserApplicationService {
-  - userRepository: UserRepository
-}
-class UserMySqlRepository {
-  - find(name: UserName): User
-}
-note as note
-* これは上位(アプリケーションサービス)が下位(リポジトリ)に依存しているため原則に違反
-* データストアを変えたい時、上位層のコードを変える必要がある
-endnote
-```
-
-```plantuml
-IUserRepository <|.. UserMySqlRepository
-UserApplicationService .> IUserRepository
-
-interface IUserRepository {
-  find(name: UserName): User
-}
-class UserApplicationService {
-  - userRepository: IUserRepository
-}
-class UserMySqlRepository {
-  - find(name: UserName): User
-}
-note as note
-* UserMySqlRepositoryの**依存関係の矢印が逆転**
-* データストアを変えた時の上位層は変えなくても良い
-endnote
-```
+![依存関係逆転の原則](./diagrams/ch07-dip.svg)
 
 - インターフェースの主導権は上位レベルに持たせ、下位レベルはそれに従う
 
-```plantuml
-package Application {
-  class UserApplicationService {
-    - userRepository: IUserRepository
-  }
-
-  interface IUserRepository {
-    find(name: UserName): User
-  }
-}
-note right
-* インターフェースの主導権は上位レベルに持たせる
-endnote
-
-class UserMySqlRepository {
-  - find(name: UserName): User
-}
-note right
-* 下位レベルが上位レベルに合わせる
-endnote
-
-IUserRepository <|.. UserMySqlRepository
-UserApplicationService .> IUserRepository
-```
+![インターフェースの主導権](./diagrams/ch07-interface-ownership.svg)
 
 ## IoC Container パターン
 
@@ -1184,164 +897,19 @@ container.Invoke(func(s *UserApplicationService) {
 
 ## CLI に組み込む
 
-```plantuml
-class Program {
-  - serviceProvide: ServiceProvider
-  + main(): void
-  + startUp(): void
-}
-class IoC {
-  + register()
-  + resolve()
-}
+![CLI への組み込み](./diagrams/ch08-cli.svg)
 
-class UserRegisterCommand {
-  + readonly id
-  + readonly name
-  + readonly email
-}
-
-class UserApplicationService {
-  + register(command: UserRegisterCommand): void
-}
-Program --> IoC: 依存関係を登録、インスタンス取得
-Program -> UserRegisterCommand: ユースケースに必要なデータオブジェクト作成(ユーザ情報登録に必要なデータ作成)
-Program --> UserApplicationService: ユースケース実現(ユーザ登録処理)
-```
-
-```plantuml
-hide footbox
-participant "メイン処理:Program" as Program
-participant "依存関係制御:IoC" as IoC
-participant "ユーザ登録するための情報:UserRegisterCommand" as UserRegisterCommand
-participant "ユーザアプリケーションサービス:UserApplicationService" as UserApplicationService
-
-Program -> Program: main
-activate Program
-
-Program -> Program: 依存関係登録処理
-activate Program
-Program -> IoC: 依存関係の登録
-activate IoC
-IoC --> Program
-deactivate IoC
-Program --> Program
-deactivate Program
-
-Program -> IoC: ユーザアプリケーションサービスインスタンス取得
-activate IoC
-IoC --> Program
-deactivate IoC
-
-alt コマンドプロンプトより入力があった(input)
-  Program -> UserRegisterCommand: command = ユーザ登録に必要なデータ作成(input)
-  activate UserRegisterCommand
-  UserRegisterCommand --> Program
-  deactivate UserRegisterCommand
-
-  Program -> UserApplicationService: ユーザ登録(command)
-  activate UserApplicationService
-  UserApplicationService --> Program
-end
-```
+![CLI のシーケンス](./diagrams/ch08-cli-sequence.svg)
 
 ## MVC フレームワークに組み込む
 
-```plantuml
-title サーバー起動時の依存関係登録
-
-class Startup {
-  + startup()
-}
-note top
-* サーバー起動時の処理
-* IoCコンテナの依存関係登録
-endnote
-
-class DependencySetupFactory {
-  + createSetup(): IDependencySetup
-}
-note top
-* IoC設定スクリプトを選択する
-endnote
-
-class SqlConnectionDependencySetup {
-  + run(service: IServiceCollection):: void
-  - setupRepository(service: IServiceCollection): void
-  - setupApplicationServices(service: IServiceCollection): void
-  - setupDomainService(service: IServiceCollection): void
-}
-note top
-* IoC設定スクリプトの1つ
-* 依存関係の登録
-endnote
-
-Startup x--> DependencySetupFactory
-Startup x--> SqlConnectionDependencySetup
-DependencySetupFactory x--> SqlConnectionDependencySetup
-```
+![サーバー起動時の依存関係登録](./diagrams/ch08-startup.svg)
 
 - コントローラー(Controller)とクライアント(View)とアプリケーションサービス(Model)の関係
 
-```plantuml
-title コントローラーとクライアントとアプリケーションサービスの関係
+![コントローラーとアプリケーションサービス](./diagrams/ch08-mvc.svg)
 
-class UserController {
-  + constructor(userApplicationService: UserApplicationService): UserController
-  + post(request: UserPostRequestModel): void
-}
-note top
-* Controller
-* クライアントとアプリケーションサービスの仲介
-endnote
-
-class UserRegisterCommand {
-  + constructor(request: UserPostRequestModel): UserRegisterCommand
-}
-note top
-* コマンドオブジェクト
-* ユーザ登録に必要なデータオブジェクト
-endnote
-
-class UserApplicationService {
-  register(command: UserRegisterCommand): void
-}
-note top
-* Model
-* ユーザアプリケーションサービス
-* ユーザ登録する処理
-endnote
-
-UserController --> UserRegisterCommand: クライアントからのデータよりユーザ登録に必要なデータ作成
-UserController --> UserApplicationService: ユーザ登録
-```
-
-```plantuml
-title コントローラーとクライアントとアプリケーションサービスの関係
-hide footbox
-actor client
-participant "コントローラー:UserController" as controller
-participant "データ作成:UserRegisterCommand" as command
-participant "ユーザ登録を実現:UserApplicationService" as service
-
-activate client
-client ->> controller: ユーザ登録リクエスト(postData)
-note left
-* webであればフロントエンド
-* 非同期リクエスト
-endnote
-activate controller
-controller -> command: command = ユーザ登録に必要なデータ作成(postData)
-activate command
-deactivate command
-
-controller -> service: ユーザ登録(command)
-activate service
-deactivate service
-deactivate controller
-deactivate client
-
-```
+![ユーザ登録リクエストのシーケンス](./diagrams/ch08-mvc-sequence.svg)
 
 ## ユニットテスト
 
@@ -1595,143 +1163,11 @@ proxyFunction()
 
 # 11 章 アプリケーションを 1 から組み立てる
 
-```plantuml
-left to right direction
-actor User
-
-usecase "サークルを作成する" as UC1
-usecase "サークルへ参加する" as UC2
-
-User --> UC1
-User --> UC2
-```
+![サークルのユースケース](./diagrams/ch11-usecase.svg)
 
 ## サークルを作成する
 
-```plantuml
-title サークルを作成
-package Controller {
-  class CircleController {}
-}
-
-package ApplicationService {
-  package Circle {
-    class CircleCreateService {
-      - circleRepository: ICircleRepository
-      - circleService: CircleService
-      - circleFactory: ICircleFactory
-      - userRepository: IUserRepository
-      + handle(command: CircleCreateCommand): void
-    }
-  }
-  package Command {
-    package CircleCommand {
-      class CircleCreateCommand {
-        - circleName: string
-        - userId: string
-        + get circleName(): string
-        + get userId(): string
-      }
-    }
-  }
-}
-
-package Domain {
-  package Model {
-    package Circles {
-      class Circle {
-        - circleId: CircleId
-        - circleName: CircleName
-        - owner: User
-        - member: User[]
-      }
-      class CircleName {
-        - value
-        + get value(): string
-        + equals(other: CircleName): boolean
-      }
-      class CircleId {
-        - value
-        + get value(): string
-      }
-      Circle *-- CircleName
-      Circle *-- CircleId
-      
-      class CircleService {
-        - circleRepository: ICircleRepository
-        + exist(circle: Circle): boolean
-      }
-      interface ICircleFactory {
-        + create(name: CircleName, owner: User): Circle
-      }
-      interface ICircleRepository {
-        + save(circle: Circle): void
-        + find(circleId: CircleId): Circle
-        + find(circleName: CircleName): Circle
-      }
-    }
-    package Users {
-      class User {
-        - userId: UserId
-        - userName: UserName
-        + get userId(): UserId
-        + get userName(): UserName
-      }
-      interface IUserRepository {
-        + save(user: User): void
-        + find(userId: UserId): User
-        + find(userName: UserName): User
-      }
-    }
-  }
-
-  ' package Factory {
-  '   package MySQL {
-  '     class CircleFactory {
-  '       + create(name: CircleName, owner: User): Circle
-  '     }
-  '   }
-  ' }
-}
-Circle o--- User
-package Infrastructure {
-  package Factory {
-    package MySQL {
-      class CircleFactory {
-        + create(name: CircleName, owner: User): Circle
-      }
-    }
-  }
-  package Repository {
-    package MySql {
-      class UserRepository {
-        + save(user: User): void
-        + find(userId: UserId): User
-        + find(userName: UserName): User
-      }
-      class CircleRepository {
-        + save(circle: Circle): void
-        + find(circleId: CircleId): Circle
-        + find(circleName: CircleName): Circle
-      }
-    }
-  }
-}
-CircleService --> ICircleRepository
-ICircleFactory <|-- CircleFactory
-CircleCreateService --> ICircleRepository
-CircleCreateService --> ICircleFactory
-CircleCreateService --> CircleService
-ICircleRepository <|-- CircleRepository
-IUserRepository <|-- UserRepository
-IUserRepository <-- CircleCreateService
-CircleController --> CircleCreateService
-CircleCreateService -> CircleCreateCommand
-CircleController -> CircleCreateCommand
-' Circle *-- CircleName
-' Circle *-- CircleId
-
-```
+![サークル作成の構成](./diagrams/ch11-circle-create.svg)
 
 # 12 章 集約
 
@@ -1740,84 +1176,11 @@ CircleController -> CircleCreateCommand
 - 外部から集約の境界内のオブジェクトの操作は、集約ルートを通して行う
 - 集約のうち、集約境界内オブジェクトの操作はその集約ルートを通してのみ行う場合**コンポジション**と言い、菱形の黒塗りで表す
 
-```plantuml
-title 集約を表すクラス図
-
-class User {
-  - userId: UserId
-  - userName: UserName
-  + changeName(userName: UserName): void
-}
-note right
-* 集約ルートオブジェクト
-* 集約境界内オブジェクトの操作は、Userオブジェクトを通してのみ行う
-endnote
-
-class UserId {
-  - value: string
-}
-note bottom
-集約境界内オブジェクト
-endnote
-
-class UserName {
-  - value: string
-}
-note bottom
-集約境界内オブジェクト
-endnote
-
-User *-- UserId
-User *-- UserName
-```
+![User 集約](./diagrams/ch12-aggregate-user.svg)
 
 - 集約ルートオブジェクトの集約は、Circle オブジェクトのみで User オブジェクトを操作しないので、ただの集約と表記する
 
-```plantuml
-title 集約を表すクラス図
-
-class User {
-  - userId: UserId
-  - userName: UserName
-  + changeName(userName: UserName): void
-}
-
-class UserId {
-  - value: string
-}
-' note bottom
-' 集約境界内オブジェクト
-' endnote
-
-class UserName {
-  - value: string
-}
-class Circle {
-  - circleName: CircleName
-  - circleId: CircleId
-  - members: User[]
-  + changeCircleName(circleName: CircleName): void
-  + join(member: User): void
-}
-
-note left
-* User, Circleは集約関係のため、
-* ユーザの操作は集約ルートであるCircleを通して行うべき
-endnote
-
-class CircleName {
-  value: string
-}
-class CircleId {
-  value: string
-}
-
-User *-- UserId: コンポジション
-User *-- UserName: コンポジション
-Circle *-- CircleId: コンポジション
-Circle *-- CircleName: コンポジション
-Circle o-- User: 集約
-```
+![Circle 集約](./diagrams/ch12-aggregate-circle.svg)
 
 ## デメテルの法則
 
@@ -1969,36 +1332,7 @@ func (u UserId) Value() string {
   - メモリの節約
   - 不慮のメソッド呼び出しがなくなる
 
-```plantuml
-title 集約を表すクラス図
-
-class UserId {
-  + value: string
-}
-
-class Circle {
-  - circleName: CircleName
-  - circleId: CircleId
-  - members: UserId[]
-  + changeCircleName(circleName: CircleName): void
-  + join(member: User): void
-}
-
-class CircleName {
-  + get value: string
-}
-class CircleId {
-  + get value: string
-}
-
-note left
-Circleの集約にはUserIdだけ含める
-endnote
-
-Circle *-- CircleId: コンポジション
-Circle *-- CircleName: コンポジション
-Circle o-- UserId: 集約
-```
+![Circle 集約に UserId だけ含める](./diagrams/ch12-aggregate-userid.svg)
 
 ## id のゲッターの是非
 
@@ -2055,28 +1389,7 @@ func (c Circle) IsFull(circleMember CircleMember) bool {
 
 - 仕様を別途定義して、それをリポジトリが利用する形にするとルールをリポジトリに書かなくて済む
 
-```plantuml
-interface ISpecification<T>{
-  isSatisfiedBy<T>(value: T): boolean
-}
-note right
-interfaceを利用することで
-さまざまな検索結果をCircleRepositoryを修正することなく
-追加できる
-endnote
-class CircleRecommendSpecification {
-  isSatisfiedBy<Circle>(value: Circle): boolean
-}
-class CircleNewCreateSpecification{
-  isSatisfiedBy<Circle>(value: Circle): boolean
-}
-class CircleRepository {
-  + find(specification: ISpecification<Circle>)
-}
-ISpecification <|-- CircleRecommendSpecification
-ISpecification <|-- CircleNewCreateSpecification
-CircleRepository -> ISpecification: 利用
-```
+![仕様とリポジトリ](./diagrams/ch13-specification.svg)
 
 - **この方法だと全サークルを取得してきて、合致するサークルを探すため、パフォーマンスに問題がある**
 

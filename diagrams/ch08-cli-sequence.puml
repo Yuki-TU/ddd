@@ -1,0 +1,35 @@
+@startuml
+hide footbox
+participant "メイン処理:Program" as Program
+participant "依存関係制御:IoC" as IoC
+participant "ユーザ登録するための情報:UserRegisterCommand" as UserRegisterCommand
+participant "ユーザアプリケーションサービス:UserApplicationService" as UserApplicationService
+
+Program -> Program: main
+activate Program
+
+Program -> Program: 依存関係登録処理
+activate Program
+Program -> IoC: 依存関係の登録
+activate IoC
+IoC --> Program
+deactivate IoC
+Program --> Program
+deactivate Program
+
+Program -> IoC: ユーザアプリケーションサービスインスタンス取得
+activate IoC
+IoC --> Program
+deactivate IoC
+
+alt コマンドプロンプトより入力があった(input)
+  Program -> UserRegisterCommand: command = ユーザ登録に必要なデータ作成(input)
+  activate UserRegisterCommand
+  UserRegisterCommand --> Program
+  deactivate UserRegisterCommand
+
+  Program -> UserApplicationService: ユーザ登録(command)
+  activate UserApplicationService
+  UserApplicationService --> Program
+end
+@enduml

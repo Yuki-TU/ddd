@@ -1,0 +1,32 @@
+@startuml
+title コントローラーとクライアントとアプリケーションサービスの関係
+
+class UserController {
+  + constructor(userApplicationService: UserApplicationService): UserController
+  + post(request: UserPostRequestModel): void
+}
+note top
+* Controller
+* クライアントとアプリケーションサービスの仲介
+endnote
+
+class UserRegisterCommand {
+  + constructor(request: UserPostRequestModel): UserRegisterCommand
+}
+note top
+* コマンドオブジェクト
+* ユーザ登録に必要なデータオブジェクト
+endnote
+
+class UserApplicationService {
+  register(command: UserRegisterCommand): void
+}
+note top
+* Model
+* ユーザアプリケーションサービス
+* ユーザ登録する処理
+endnote
+
+UserController --> UserRegisterCommand: クライアントからのデータよりユーザ登録に必要なデータ作成
+UserController --> UserApplicationService: ユーザ登録
+@enduml

@@ -1,0 +1,18 @@
+@startuml
+IUserRepository <|.. UserMySqlRepository
+UserApplicationService .> IUserRepository
+
+interface IUserRepository {
+  find(name: UserName): User
+}
+class UserApplicationService {
+  - userRepository: IUserRepository
+}
+class UserMySqlRepository {
+  - find(name: UserName): User
+}
+note as note
+* UserMySqlRepositoryの**依存関係の矢印が逆転**
+* データストアを変えた時の上位層は変えなくても良い
+endnote
+@enduml

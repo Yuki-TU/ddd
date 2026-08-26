@@ -1,0 +1,10 @@
+@startuml
+left to right direction
+actor User
+
+usecase "サークルを作成する" as UC1
+usecase "サークルへ参加する" as UC2
+
+User --> UC1
+User --> UC2
+@enduml

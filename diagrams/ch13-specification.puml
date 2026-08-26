@@ -1,0 +1,22 @@
+@startuml
+interface ISpecification<T>{
+  isSatisfiedBy<T>(value: T): boolean
+}
+note right
+interfaceを利用することで
+さまざまな検索結果をCircleRepositoryを修正することなく
+追加できる
+endnote
+class CircleRecommendSpecification {
+  isSatisfiedBy<Circle>(value: Circle): boolean
+}
+class CircleNewCreateSpecification{
+  isSatisfiedBy<Circle>(value: Circle): boolean
+}
+class CircleRepository {
+  + find(specification: ISpecification<Circle>)
+}
+ISpecification <|-- CircleRecommendSpecification
+ISpecification <|-- CircleNewCreateSpecification
+CircleRepository -> ISpecification: 利用
+@enduml

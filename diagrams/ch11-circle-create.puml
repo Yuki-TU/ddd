@@ -1,0 +1,123 @@
+@startuml
+title サークルを作成
+package Controller {
+  class CircleController {}
+}
+
+package ApplicationService {
+  package Circle {
+    class CircleCreateService {
+      - circleRepository: ICircleRepository
+      - circleService: CircleService
+      - circleFactory: ICircleFactory
+      - userRepository: IUserRepository
+      + handle(command: CircleCreateCommand): void
+    }
+  }
+  package Command {
+    package CircleCommand {
+      class CircleCreateCommand {
+        - circleName: string
+        - userId: string
+        + get circleName(): string
+        + get userId(): string
+      }
+    }
+  }
+}
+
+package Domain {
+  package Model {
+    package Circles {
+      class Circle {
+        - circleId: CircleId
+        - circleName: CircleName
+        - owner: User
+        - member: User[]
+      }
+      class CircleName {
+        - value
+        + get value(): string
+        + equals(other: CircleName): boolean
+      }
+      class CircleId {
+        - value
+        + get value(): string
+      }
+      Circle *-- CircleName
+      Circle *-- CircleId
+      
+      class CircleService {
+        - circleRepository: ICircleRepository
+        + exist(circle: Circle): boolean
+      }
+      interface ICircleFactory {
+        + create(name: CircleName, owner: User): Circle
+      }
+      interface ICircleRepository {
+        + save(circle: Circle): void
+        + find(circleId: CircleId): Circle
+        + find(circleName: CircleName): Circle
+      }
+    }
+    package Users {
+      class User {
+        - userId: UserId
+        - userName: UserName
+        + get userId(): UserId
+        + get userName(): UserName
+      }
+      interface IUserRepository {
+        + save(user: User): void
+        + find(userId: UserId): User
+        + find(userName: UserName): User
+      }
+    }
+  }
+
+  ' package Factory {
+  '   package MySQL {
+  '     class CircleFactory {
+  '       + create(name: CircleName, owner: User): Circle
+  '     }
+  '   }
+  ' }
+}
+Circle o--- User
+package Infrastructure {
+  package Factory {
+    package MySQL {
+      class CircleFactory {
+        + create(name: CircleName, owner: User): Circle
+      }
+    }
+  }
+  package Repository {
+    package MySql {
+      class UserRepository {
+        + save(user: User): void
+        + find(userId: UserId): User
+        + find(userName: UserName): User
+      }
+      class CircleRepository {
+        + save(circle: Circle): void
+        + find(circleId: CircleId): Circle
+        + find(circleName: CircleName): Circle
+      }
+    }
+  }
+}
+CircleService --> ICircleRepository
+ICircleFactory <|-- CircleFactory
+CircleCreateService --> ICircleRepository
+CircleCreateService --> ICircleFactory
+CircleCreateService --> CircleService
+ICircleRepository <|-- CircleRepository
+IUserRepository <|-- UserRepository
+IUserRepository <-- CircleCreateService
+CircleController --> CircleCreateService
+CircleCreateService -> CircleCreateCommand
+CircleController -> CircleCreateCommand
+' Circle *-- CircleName
+' Circle *-- CircleId
+@enduml
