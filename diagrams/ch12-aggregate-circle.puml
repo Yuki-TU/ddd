@@ -26,8 +26,9 @@ class Circle {
 }
 
 note left
-* User, Circleは集約関係のため、
-* ユーザの操作は集約ルートであるCircleを通して行うべき
+* User は Circle と独立して存在する別集約
+* ライフサイクルが独立するので UML 集約（白菱形）
+* Circle 経由で User 本体（名前変更など）は操作しない
 endnote
 
 class CircleName {

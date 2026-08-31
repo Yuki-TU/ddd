@@ -25,6 +25,6 @@ note bottom
 集約境界内オブジェクト
 endnote
 
-User *-- UserID
-User *-- UserName
+User *-- UserID: コンポジション
+User *-- UserName: コンポジション
 @enduml

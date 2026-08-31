@@ -10,7 +10,7 @@ class Circle {
   - circleID: CircleID
   - members: UserID[]
   + ChangeName(name CircleName) error
-  + Join(member User) error
+  + Join(memberID UserID) error
 }
 
 class CircleName {

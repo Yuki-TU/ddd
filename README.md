@@ -1168,50 +1168,146 @@ proxyFunction()
 
 # 12 章 集約
 
-- 全体(集約ルートのオブジェクト)-部分(集約境界内のオブジェクト)関係を表す
-  - 全体に当たる型が部分の型を包含する
-- 外部から集約の境界内のオブジェクトの操作は、集約ルートを通して行う
-- 集約のうち、集約境界内オブジェクトの操作はその集約ルートを通してのみ行う場合**コンポジション**と言い、菱形の黒塗りで表す
+DDD の**集約**は、一緒に整合性を保つオブジェクトのまとまり。
+
+- 全体(集約ルート)が部分(集約境界内のオブジェクト)を包含する
+- 外部から境界内オブジェクトを操作するときは、集約ルートを通す
+
+クラス図の菱形は **UML の集約 / コンポジション**。DDD の集約とは別物。
+見分け方は「全体が消えたとき、部分は生き残るか」。
+
+1. まず 1 つの集約の中身（User と UserName）
+2. 次に別集約同士の関係（Circle と User）
+3. 別集約は本体を持たず ID だけ持つ
+4. ルート経由の操作、リポジトリ、大きさ
+
+## コンポジション（User と UserName）
+
+部分は全体に強く属し、全体なしでは単独で存在できない。菱形の黒塗り。
+
+- 例: User と UserName。User を消したら UserName だけ残して使うことはない
+- コード: 部分は全体の内部で生成することが多く、外から独立して扱わない
 
 ![User 集約](./diagrams/ch12-aggregate-user.svg)
 
-- 集約ルートオブジェクトの集約は、Circle オブジェクトのみで User オブジェクトを操作しないので、ただの集約と表記する
+```go
+type User struct {
+	id   UserID
+	name UserName
+}
+
+func NewUser(id UserID, name string) (*User, error) {
+	// UserName は User の一部として内部で生成する。独立した集約にはしない
+	userName, err := NewUserName(name)
+	if err != nil {
+		return nil, err
+	}
+	return &User{id: id, name: userName}, nil
+}
+
+func (u *User) ChangeName(name UserName) error {
+	u.name = name // 名前の入れ替えも集約ルート経由
+	return nil
+}
+
+user.ChangeName(newName) // OK: ルート経由
+
+// NG: 境界内オブジェクトを集約の外から直接いじる
+user.name = newName
+```
+
+## UML の集約（Circle と User）
+
+全体がなくなっても、部分は単独で生き残る。菱形の白抜き。
+
+- 例: サークルとユーザ。サークルを解散してもユーザは消えない。別サークルに移れる
+- コード: 部分は外から引数で受け取る（依存の注入）が多い
 
 ![Circle 集約](./diagrams/ch12-aggregate-circle.svg)
 
+```go
+type Circle struct {
+	members []UserID
+}
+
+func NewCircle(members []UserID) *Circle {
+	// メンバーは外から受け取る。サークルが解散しても User は残る
+	return &Circle{members: members}
+}
+
+func (c *Circle) Join(userID UserID) error {
+	// Circle 経由で User 本体は操作しない
+	if c.hasMember(userID) {
+		return ErrAlreadyMember
+	}
+	if c.IsFull() {
+		return ErrCircleFull
+	}
+	c.members = append(c.members, userID)
+	return nil
+}
+
+// NG: User 本体を持ってしまうと、Circle 経由で別集約を操作しがち
+type Circle struct {
+	members []*User
+}
+
+func (c *Circle) ChangeMemberName(id UserID, name UserName) error {
+	for _, m := range c.members {
+		if m.ID().Equal(id) {
+			return m.ChangeName(name)
+		}
+	}
+	return ErrMemberNotFound
+}
+```
+
+## 別集約は ID だけ持つ
+
+Circle が User 本体を持つと、ついつい User のメソッドを呼んでしまう。
+
+- id のみ集約に含める
+  - id さえあれば一意のデータを取得できる
+  - メモリの節約
+  - 不慮のメソッド呼び出しがなくなる
+- ID を利用してビジネスロジックを書くことはほとんどないため、ゲッターにしても問題になりにくい
+
+![Circle 集約に UserID だけ含める](./diagrams/ch12-aggregate-userid.svg)
+
 ## デメテルの法則
 
-オブジェクト同士のメソッドを呼び出す際の秩序を守るためのガイドライン
+「友達の友達に話しかけるな」。外からは Circle に頼むだけで、中の `members` を直接触らない。
 
-- メソッドを呼び出すオブジェクトは以下の 4 つ
-
-  1. オブジェクト自身
-  2. 引数として渡されたオブジェクト
-  3. インスタンス変数
-  4. 直接インスタンス化したオブジェクト
-
-- 例
+メンバーを追加したいとき:
 
 ```go
-// OK
-type Circle struct {
-	members []User
-}
+// OK: Circle に頼む
+circle.Join(userID)
 
-func (c *Circle) Join(user User) {
-	// 3. インスタンス変数のメソッド呼び出し
-	c.members = append(c.members, user)
-}
-
-circle := &Circle{}
-// 1. オブジェクト自身
-circle.Join(user)
-
-// デメテルの法則に違反するコード例 NG
-// オブジェクトのインスタンス変数のメソッド
-_ = len(circle.members)
-circle.members = append(circle.members, user)
+// NG: 中の members を外から直接いじる
+circle.members = append(circle.members, userID)
 ```
+
+メンバー数を知りたいとき:
+
+```go
+// OK: Circle に聞く。満員かどうかは集約自身が知っている
+if circle.IsFull() {
+}
+
+// NG: 中身を出して、外でルールを計算している
+if len(circle.members) >= 30 {
+}
+```
+
+`Join` の中で `c.members` を触るのは問題ない。それは Circle 自身のフィールドだから。
+
+呼べる相手は次の 4 つだけ、と覚える。
+
+1. オブジェクト自身
+2. 引数として渡されたオブジェクト
+3. 自分のインスタンス変数
+4. その場で作ったオブジェクト
 
 ## ドメインのルールは全てドメインオブジェクトにする
 
@@ -1316,26 +1412,13 @@ func (id UserID) String() string {
 }
 ```
 
-## どの単位でリポジトリを作成するのか
+## リポジトリは集約単位で作る
 
 - **集約の単位でリポジトリは作成する**
 - 集約に対する変更、永続化の依頼も集約ごとに対して行うことが大事
   - そうしないと同じコードが散在する
 
-## 集約の値で集約を保持する場合は制約をかける
-
-- id のみ集約に含める
-  - id さえあれば一意のデータを取得できる
-  - メモリの節約
-  - 不慮のメソッド呼び出しがなくなる
-
-![Circle 集約に UserID だけ含める](./diagrams/ch12-aggregate-userid.svg)
-
-## ID のゲッターの是非
-
-- ID を利用してビジネスロジックを書くことはほとんどないため、ゲッターにしても問題になりにくい
-
-## 集約の単位
+## 集約の単位は小さく
 
 - 集約の単位はなるべく小さく保つ、同一トランザクション内で多くの集約を扱わないようにする
   - 処理が多いと、トランザクションが失敗する可能性が高くなる
