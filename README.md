@@ -1180,7 +1180,7 @@ proxyFunction()
 
 1. まず 1 つの集約の中身（User と UserName）
 2. 次に別集約同士の関係（Circle と User）
-3. 別集約は本体を持たず ID だけ持つ
+3. 集約同士は直接操作せず、ID とアプリケーションサービスでつなぐ
 4. ルート経由の操作、リポジトリ、大きさ
 
 ## コンポジション（User と UserName）
@@ -1264,14 +1264,60 @@ func (c *Circle) ChangeMemberName(id UserID, name UserName) error {
 }
 ```
 
-## 別集約は ID だけ持つ
+## 集約同士は直接操作しない
 
-Circle が User 本体を持つと、ついつい User のメソッドを呼んでしまう。
+User と Circle は、それぞれ別の集約ルート。
 
-- id のみ集約に含める
-  - id さえあれば一意のデータを取得できる
-  - メモリの節約
-  - 不慮のメソッド呼び出しがなくなる
+- UserName / UserID の操作は User 経由
+- CircleName / CircleID / メンバー構成の操作は Circle 経由
+- **Circle が User のインスタンスを取り出して操作してはいけない**
+
+集約は、ビジネスルールを守る最小の境界。Circle が `User.ChangeName` を呼ぶと、次が起きる。
+
+- **トランザクションが肥大化する**。1 トランザクションで更新する集約は 1 つが原則。Circle と User を同時に変えると、ロックが広がり失敗しやすくなる
+- **境界が崩れる**。User のルールを守るのは User ルートの責任。Circle が触ると、User の自律性がなくなり結合が上がる
+
+正しいつなぎ方は、本体ではなく ID だけを持ち、アプリケーションサービスが仲介すること。
+
+1. Circle は User 本体を持たず、`UserID` だけ持つ
+2. アプリケーションサービスが、Circle と User をそれぞれのリポジトリから取る
+3. サークル参加なら Circle の `Join` だけ呼ぶ。名前変更なら User の `ChangeName` だけ呼ぶ
+4. 更新した集約だけを保存する
+
+```go
+// サークル参加: 更新するのは Circle だけ。User は存在確認に使い、操作しない
+func (s *JoinService) Join(cmd JoinCommand) error {
+	member, err := s.users.FindByID(userID)
+	if err != nil {
+		return err
+	}
+	c, err := s.circles.FindByID(circleID)
+	if err != nil {
+		return err
+	}
+	// User 本体ではなく ID だけ渡す。名前変更などはしない
+	if err := c.Join(member.ID()); err != nil {
+		return err
+	}
+	return s.circles.Save(c)
+}
+
+// 名前変更: 更新するのは User だけ。Circle は触らない
+func (s *UpdateUserService) UpdateName(userID UserID, name UserName) error {
+	u, err := s.users.FindByID(userID)
+	if err != nil {
+		return err
+	}
+	if err := u.ChangeName(name); err != nil {
+		return err
+	}
+	return s.users.Save(u)
+}
+```
+
+- id さえあれば一意のデータを取得できる
+- メモリの節約
+- 不慮のメソッド呼び出しがなくなる
 - ID を利用してビジネスロジックを書くことはほとんどないため、ゲッターにしても問題になりにくい
 
 ![Circle 集約に UserID だけ含める](./diagrams/ch12-aggregate-userid.svg)
