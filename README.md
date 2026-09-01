@@ -1225,33 +1225,16 @@ user.name = newName
 - 例: サークルとユーザ。サークルを解散してもユーザは消えない。別サークルに移れる
 - コード: 部分は外から引数で受け取る（依存の注入）が多い
 
-![Circle 集約](./diagrams/ch12-aggregate-circle.svg)
+![Circle 集約の NG](./diagrams/ch12-aggregate-circle.svg)
+
+User 本体を持つと、Circle 経由で別集約を操作しがち。
 
 ```go
+// NG
 type Circle struct {
-	members []UserID
-}
-
-func NewCircle(members []UserID) *Circle {
-	// メンバーは外から受け取る。サークルが解散しても User は残る
-	return &Circle{members: members}
-}
-
-func (c *Circle) Join(userID UserID) error {
-	// Circle 経由で User 本体は操作しない
-	if c.hasMember(userID) {
-		return ErrAlreadyMember
-	}
-	if c.IsFull() {
-		return ErrCircleFull
-	}
-	c.members = append(c.members, userID)
-	return nil
-}
-
-// NG: User 本体を持ってしまうと、Circle 経由で別集約を操作しがち
-type Circle struct {
-	members []*User
+	circleID   CircleID
+	circleName CircleName
+	members    []*User
 }
 
 func (c *Circle) ChangeMemberName(id UserID, name UserName) error {
@@ -1321,6 +1304,35 @@ func (s *UpdateUserService) UpdateName(userID UserID, name UserName) error {
 - ID を利用してビジネスロジックを書くことはほとんどないため、ゲッターにしても問題になりにくい
 
 ![Circle 集約に UserID だけ含める](./diagrams/ch12-aggregate-userid.svg)
+
+```go
+// OK: メンバーは UserID だけ持つ
+type Circle struct {
+	circleID   CircleID
+	circleName CircleName
+	members    []UserID
+}
+
+func NewCircle(id CircleID, name CircleName, members []UserID) *Circle {
+	// メンバーは外から受け取る。サークルが解散しても User は残る
+	return &Circle{
+		circleID:   id,
+		circleName: name,
+		members:    members,
+	}
+}
+
+func (c *Circle) Join(userID UserID) error {
+	if c.hasMember(userID) {
+		return ErrAlreadyMember
+	}
+	if c.IsFull() {
+		return ErrCircleFull
+	}
+	c.members = append(c.members, userID)
+	return nil
+}
+```
 
 ## デメテルの法則
 

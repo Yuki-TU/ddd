@@ -1,5 +1,5 @@
 @startuml
-title 集約を表すクラス図
+title 集約を表すクラス図（NG）
 
 class User {
   - userID: UserID
@@ -10,13 +10,11 @@ class User {
 class UserID {
   - value: string
 }
-' note bottom
-' 集約境界内オブジェクト
-' endnote
 
 class UserName {
   - value: string
 }
+
 class Circle {
   - circleName: CircleName
   - circleID: CircleID
@@ -28,7 +26,8 @@ class Circle {
 note left
 * User は Circle と独立して存在する別集約
 * サークルが消えてもユーザは残るので白菱形
-* Circle 経由で User 本体（名前変更など）は操作しない
+* NG: User 本体を Circle が持っている
+* Circle 経由で名前変更などしがち
 endnote
 
 class CircleName {

@@ -1,8 +1,18 @@
 @startuml
-title 集約を表すクラス図
+title 集約を表すクラス図（OK）
+
+class User {
+  - userID: UserID
+  - userName: UserName
+  + ChangeName(userName UserName) error
+}
 
 class UserID {
-  + value: string
+  - value: string
+}
+
+class UserName {
+  - value: string
 }
 
 class Circle {
@@ -10,20 +20,25 @@ class Circle {
   - circleID: CircleID
   - members: UserID[]
   + ChangeName(name CircleName) error
-  + Join(memberID UserID) error
-}
-
-class CircleName {
-  + String() string
-}
-class CircleID {
-  + String() string
+  + Join(userID UserID) error
 }
 
 note left
-Circleの集約にはUserIDだけ含める
+* User は Circle と独立して存在する別集約
+* サークルが消えてもユーザは残るので白菱形
+* Circleの集約にはUserIDだけ含める
+* Circle 経由で User 本体（名前変更など）は操作しない
 endnote
 
+class CircleName {
+  value: string
+}
+class CircleID {
+  value: string
+}
+
+User *-- UserID: コンポジション
+User *-- UserName: コンポジション
 Circle *-- CircleID: コンポジション
 Circle *-- CircleName: コンポジション
 Circle o-- UserID: 集約
